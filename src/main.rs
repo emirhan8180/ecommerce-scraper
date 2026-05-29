@@ -1,5 +1,8 @@
+use std::fs;
+
 use anyhow::Result;
 use scraper::{ElementRef, Html, Selector};
+use serde::{Deserialize, Serialize};
 
 struct ProductDataSelectors<'a> {
     link: &'a Selector,
@@ -8,7 +11,7 @@ struct ProductDataSelectors<'a> {
     price: &'a Selector,
 }
 
-#[derive(Debug)]
+#[derive(Serialize, Deserialize)]
 struct ProductData<'a> {
     url: &'a str,
     image: &'a str,
@@ -59,7 +62,7 @@ async fn main() -> Result<()> {
         .filter_map(|product| ProductData::get_from_element(product, &selectors))
         .collect();
 
-    println!("{data:?}");
+    fs::write("./data.json", serde_json::to_string(&data)?)?;
 
     Ok(())
 }
