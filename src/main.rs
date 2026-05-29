@@ -1,5 +1,12 @@
 use anyhow::Result;
-use scraper::{Html, Selector};
+use scraper::{ElementRef, Html, Selector};
+
+struct ProductDataSelectors<'a> {
+    link: &'a Selector,
+    img: &'a Selector,
+    title: &'a Selector,
+    price: &'a Selector,
+}
 
 #[derive(Debug)]
 struct ProductData<'a> {
@@ -7,6 +14,24 @@ struct ProductData<'a> {
     image: &'a str,
     name: String,
     price: f32,
+}
+
+impl<'a> ProductData<'a> {
+    fn get_from_element(product: ElementRef<'a>, selectors: &ProductDataSelectors) -> Option<Self> {
+        let a = product.select(selectors.link).next()?;
+        let img = product.select(selectors.img).next()?;
+        let h2 = product.select(selectors.title).next()?;
+        let price = product.select(selectors.price).next()?;
+
+        let price: String = price.text().collect();
+
+        Some(ProductData {
+            url: a.value().attr("href")?,
+            image: img.value().attr("src")?,
+            name: h2.text().collect(),
+            price: price.replace('$', "").trim().parse().ok()?,
+        })
+    }
 }
 
 #[tokio::main]
@@ -22,32 +47,16 @@ async fn main() -> Result<()> {
 
     let product_selector = Selector::parse("#product-list > li").unwrap();
 
-    let link_selector = Selector::parse("a").unwrap();
-    let img_selector = Selector::parse("img").unwrap();
-    let title_selector = Selector::parse("h2").unwrap();
-    let price_selector = Selector::parse(".price").unwrap();
+    let selectors = ProductDataSelectors {
+        link: &Selector::parse("a").unwrap(),
+        img: &Selector::parse("img").unwrap(),
+        title: &Selector::parse("h2").unwrap(),
+        price: &Selector::parse(".price").unwrap(),
+    };
 
     let data: Vec<_> = document
         .select(&product_selector)
-        .filter_map(|product| {
-            let a = product.select(&link_selector).next()?;
-            let img = product.select(&img_selector).next()?;
-            let h2 = product.select(&title_selector).next()?;
-            let bdi = product.select(&price_selector).next()?;
-
-            Some(ProductData {
-                url: a.value().attr("href")?,
-                image: img.value().attr("src")?,
-                name: h2.text().collect(),
-                price: bdi
-                    .text()
-                    .collect::<String>()
-                    .replace('$', "")
-                    .trim()
-                    .parse()
-                    .ok()?,
-            })
-        })
+        .filter_map(|product| ProductData::get_from_element(product, &selectors))
         .collect();
 
     println!("{data:?}");
