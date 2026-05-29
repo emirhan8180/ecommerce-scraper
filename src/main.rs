@@ -12,6 +12,17 @@ struct ProductDataSelectors {
     price: Selector,
 }
 
+impl ProductDataSelectors {
+    fn new() -> Self {
+        Self {
+            link: Selector::parse("a").unwrap(),
+            img: Selector::parse("img").unwrap(),
+            title: Selector::parse("h2").unwrap(),
+            price: Selector::parse(".price").unwrap(),
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize)]
 struct ProductData {
     url: String,
@@ -29,7 +40,7 @@ impl ProductData {
 
         let price: String = price.text().collect();
 
-        Some(ProductData {
+        Some(Self {
             url: a.value().attr("href")?.to_string(),
             image: img.value().attr("src")?.to_string(),
             name: h2.text().collect(),
@@ -68,12 +79,7 @@ async fn main() -> Result<()> {
 
     let product_selector = Selector::parse("#product-list > li").unwrap();
 
-    let selectors = ProductDataSelectors {
-        link: Selector::parse("a").unwrap(),
-        img: Selector::parse("img").unwrap(),
-        title: Selector::parse("h2").unwrap(),
-        price: Selector::parse(".price").unwrap(),
-    };
+    let selectors = ProductDataSelectors::new();
 
     let products = stream::iter(1..=12)
         .map(|page| get_product_data(page, &client, &product_selector, &selectors))
