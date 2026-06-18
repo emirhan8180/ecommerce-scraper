@@ -7,7 +7,7 @@ A web scraper to extract product data from [this site](https://www.scrapingcours
 Make sure that Rust is installed, and then clone the repo:
 
 ```bash
-git clone https://github.com/8180e/ecommerce-scraper.git
+git clone https://github.com/emirhan8180/ecommerce-scraper.git
 cd ecommerce-scraper
 ```
 
